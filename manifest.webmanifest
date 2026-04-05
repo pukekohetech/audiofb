@@ -2,21 +2,21 @@
   "name": "Audio Feedback Recorder",
   "short_name": "Feedback Recorder",
   "description": "Record, trim, reorder, download, and transcribe spoken feedback.",
-  "start_url": "./audio_feedback_recorder.html",
-  "scope": "./",
+  "start_url": "/audiofb/index.html",
+  "scope": "/audiofb/",
   "display": "standalone",
   "background_color": "#f8f9fa",
   "theme_color": "#1a73e8",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "./icons/icon-192.png",
+      "src": "/audiofb/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "./icons/icon-512.png",
+      "src": "/audiofb/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
