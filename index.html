@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Audio Feedback Recorder</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#1a73e8" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Feedback Recorder" />
   <style>
     :root {
       --bg: #f8f9fa;
@@ -40,6 +47,7 @@
       margin: 0 auto;
       display: grid;
       gap: 20px;
+      padding-bottom: 120px;
     }
 
     .card {
@@ -100,7 +108,11 @@
     .value.highlight { color: var(--green); }
     .value.warning { color: #a15c00; }
 
-    .controls { display: flex; flex-wrap: wrap; gap: 12px; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
 
     button {
       appearance: none;
@@ -113,8 +125,17 @@
       transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
     }
 
-    button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: var(--shadow-hover); }
-    button:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; transform: none; }
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
 
     .primary { background: var(--blue); color: white; box-shadow: 0 1px 2px rgba(26, 115, 232, 0.28); }
     .secondary { background: var(--surface); color: var(--blue); border-color: var(--border); }
@@ -314,6 +335,52 @@
       background: var(--surface);
     }
 
+    .mobile-recorder-wrap {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: max(16px, env(safe-area-inset-bottom));
+      z-index: 30;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .mobile-recorder-inner {
+      pointer-events: auto;
+      background: rgba(248, 249, 250, 0.94);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 10px;
+      box-shadow: var(--shadow-hover);
+      backdrop-filter: blur(8px);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .record-button {
+      min-width: 220px;
+      min-height: 64px;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 700;
+      background: var(--red);
+      color: white;
+      box-shadow: 0 4px 14px rgba(217, 48, 37, 0.28);
+      touch-action: none;
+    }
+
+    .record-button.recording {
+      background: var(--green);
+      box-shadow: 0 4px 14px rgba(52, 168, 83, 0.28);
+    }
+
+    .install-button {
+      min-height: 64px;
+      white-space: nowrap;
+    }
+
     .tips ul { margin: 10px 0 0 18px; color: var(--muted); line-height: 1.7; }
     code { background: var(--surface-soft); color: var(--blue); padding: 2px 6px; border-radius: 6px; }
 
@@ -324,6 +391,8 @@
       .timeline { height: 34px; }
       .timeline-handle { width: 18px; height: 18px; }
       .field-grid { grid-template-columns: 1fr; }
+      .mobile-recorder-inner { width: 100%; justify-content: center; }
+      .record-button { flex: 1; min-width: 0; }
     }
   </style>
 </head>
@@ -333,15 +402,14 @@
       <div>
         <h1>Audio Feedback Recorder</h1>
         <p>
-          Hold the <strong>spacebar</strong> to record. Release it to pause. Press it again to continue as a new recording.
-          When you are not recording, you can drag the trim handles, reorder clips, build the final recording, download it, and fetch a transcript with AssemblyAI.
+          Hold the <strong>spacebar</strong> on desktop or the large <strong>record button</strong> on mobile to record. Release to stop that clip, trim the start and end, reorder clips, build the final recording, download it, and fetch a transcript with AssemblyAI.
         </p>
       </div>
 
       <div class="pill-row">
-        <div class="pill blue">Press and hold Space to record</div>
-        <div class="pill green">Release to pause</div>
-        <div class="pill yellow">AssemblyAI upload + poll</div>
+        <div class="pill blue">Desktop: hold Space</div>
+        <div class="pill green">Mobile: hold Record</div>
+        <div class="pill yellow">Installable as a PWA</div>
       </div>
 
       <div class="status-row">
@@ -388,14 +456,14 @@
         Each press-and-hold creates a separate recording that keeps its original number. Drag the blue start handle and green end handle on each clip to trim what is included in the final export.
       </p>
       <div id="segmentList" class="editor-list">
-        <div class="empty">No recordings yet. Enable the microphone and hold the spacebar to start.</div>
+        <div class="empty">No recordings yet. Enable the microphone and hold the spacebar or record button to start.</div>
       </div>
     </section>
 
     <section class="card">
       <h2>AssemblyAI Settings</h2>
       <div class="api-wrap">
-        <div class="small-note">This uses AssemblyAI's upload endpoint, then submits a transcript job using the returned <code>upload_url</code>. The page also stores your AssemblyAI settings in this browser so you do not need to re-enter them each time.</div>
+        <div class="small-note">This uses AssemblyAI's upload endpoint, then submits a transcript job using the returned <code>upload_url</code>, then polls until the transcript is completed. Your settings are saved in this browser.</div>
         <div class="field-grid">
           <div class="field full">
             <label for="apiKeyInput">AssemblyAI API key</label>
@@ -426,7 +494,7 @@
     <section class="card">
       <h2>Transcript</h2>
       <div class="transcript-wrap">
-        <div class="small-note">When you click <strong>Fetch Transcript</strong>, the app uploads the built audio to AssemblyAI, submits a transcript job to <code>/v2/transcript</code>, then polls that transcript until it is finished. AssemblyAI's current transcript submit example uses <code>language_code: \"en_us\"</code>, so the default here is set to that rather than plain <code>en</code>. ([assemblyai.com](https://www.assemblyai.com/docs/api-reference/transcripts/submit?utm_source=chatgpt.com))</div>
+        <div class="small-note">When you click <strong>Fetch Transcript</strong>, the app uploads the built audio to AssemblyAI, submits a transcript job, then polls until the transcript is ready.</div>
         <textarea id="transcriptBox" class="transcript-box" placeholder="Fetched transcript text will appear here."></textarea>
       </div>
     </section>
@@ -434,11 +502,19 @@
     <section class="card tips">
       <h2>Notes</h2>
       <ul>
-        <li>AssemblyAI transcription of uploaded files uses the same project API key for both upload and transcript requests. ([assemblyai.com](https://www.assemblyai.com/docs/api-reference/files/upload?utm_source=chatgpt.com))</li>
-        <li>If this page is hosted on a site with strict browser restrictions, you may still hit CORS or key-exposure concerns. In production, a small backend proxy is safer.</li>
+        <li>Desktop: hold the spacebar to record.</li>
+        <li>Mobile: hold the bottom record button to record.</li>
+        <li>The app can be installed if served as a PWA over HTTPS or localhost.</li>
         <li>The final file downloads as <code>.webm</code> for broad browser support.</li>
       </ul>
     </section>
+  </div>
+
+  <div class="mobile-recorder-wrap">
+    <div class="mobile-recorder-inner">
+      <button id="recordHoldBtn" class="record-button" type="button">Hold to Record</button>
+      <button id="installBtn" class="secondary install-button" type="button" hidden>Install App</button>
+    </div>
   </div>
 
   <script>
@@ -459,6 +535,7 @@
       dragInfo: null,
       finalTranscript: '',
       lastBuiltBlob: null,
+      deferredPrompt: null,
     };
 
     const micStatus = document.getElementById('micStatus');
@@ -480,6 +557,10 @@
     const languageDetectionInput = document.getElementById('languageDetectionInput');
     const pollMsInput = document.getElementById('pollMsInput');
     const speechModelsInput = document.getElementById('speechModelsInput');
+    const recordHoldBtn = document.getElementById('recordHoldBtn');
+    const installBtn = document.getElementById('installBtn');
+
+    const STORAGE_KEY = 'audio-feedback-recorder-settings-v2';
 
     function setMicStatus(text, cls = '') {
       micStatus.textContent = text;
@@ -489,6 +570,9 @@
     function setRecordingStatus(text, cls = '') {
       recordingStatus.textContent = text;
       recordingStatus.className = `value ${cls}`.trim();
+      const active = text.toLowerCase().includes('recording');
+      recordHoldBtn.classList.toggle('recording', active);
+      recordHoldBtn.textContent = active ? 'Recording... release to stop' : 'Hold to Record';
     }
 
     function setTranscriptStatus(text, cls = '') {
@@ -513,8 +597,6 @@
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }
-
-    const STORAGE_KEY = 'audio-feedback-recorder-settings-v1';
 
     function saveSettings() {
       const settings = {
@@ -652,8 +734,7 @@
       state.dragInfo = null;
       window.removeEventListener('pointermove', onGlobalPointerMove);
       window.removeEventListener('pointerup', stopDrag);
-      loadSettings();
-    renderSegments();
+      renderSegments();
     }
 
     function createSegmentElement(segment, index) {
@@ -783,7 +864,7 @@
       if (state.segments.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'empty';
-        empty.textContent = 'No recordings yet. Enable the microphone and hold the spacebar to start.';
+        empty.textContent = 'No recordings yet. Enable the microphone and hold the spacebar or record button to start.';
         segmentList.appendChild(empty);
       } else {
         state.segments.forEach((segment, index) => {
@@ -924,6 +1005,28 @@
     function stopRecording() {
       if (!state.isRecording || !state.recorder) return;
       if (state.recorder.state !== 'inactive') state.recorder.stop();
+    }
+
+    function startHoldRecording(event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      if (!state.isReady) {
+        alert('Enable the microphone first.');
+        return;
+      }
+      state.isSpaceHeld = true;
+      startRecording();
+    }
+
+    function stopHoldRecording(event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      state.isSpaceHeld = false;
+      stopRecording();
     }
 
     function isTypingTarget(target) {
@@ -1113,7 +1216,8 @@
       });
 
       if (!response.ok) {
-        throw new Error(`Transcript submit failed with status ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`Transcript submit failed with status ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
@@ -1151,7 +1255,7 @@
 
     async function fetchTranscript() {
       if (state.isRecording) {
-        alert('Release the spacebar before fetching a transcript.');
+        alert('Release the spacebar or record button before fetching a transcript.');
         return;
       }
       if (state.segments.length === 0) {
@@ -1162,10 +1266,7 @@
       const apiKey = apiKeyInput.value.trim();
       const languageDetection = languageDetectionInput.value === 'true';
       const pollMs = Math.max(500, Number(pollMsInput.value) || 2500);
-      const speechModels = speechModelsInput.value
-        .split(',')
-        .map(model => model.trim())
-        .filter(Boolean);
+      const speechModels = speechModelsInput.value.split(',').map(model => model.trim()).filter(Boolean);
 
       if (!apiKey) {
         alert('Please enter your AssemblyAI API key.');
@@ -1200,7 +1301,7 @@
 
     async function submitRecording() {
       if (state.isRecording) {
-        alert('Release the spacebar before downloading.');
+        alert('Release the spacebar or record button before downloading.');
         return;
       }
       if (state.segments.length === 0) {
@@ -1220,6 +1321,36 @@
         submitBtn.textContent = oldText;
         submitBtn.disabled = state.segments.length === 0 || state.isRecording;
       }
+    }
+
+    async function promptInstall() {
+      if (!state.deferredPrompt) return;
+      state.deferredPrompt.prompt();
+      await state.deferredPrompt.userChoice;
+      state.deferredPrompt = null;
+      installBtn.hidden = true;
+    }
+
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      state.deferredPrompt = event;
+      installBtn.hidden = false;
+    });
+
+    window.addEventListener('appinstalled', () => {
+      installBtn.hidden = true;
+      state.deferredPrompt = null;
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          await navigator.serviceWorker.register('./sw.js');
+          console.log('Service worker registered');
+        } catch (error) {
+          console.error('Service worker registration failed', error);
+        }
+      });
     }
 
     window.addEventListener('keydown', async (event) => {
@@ -1258,6 +1389,15 @@
 
     previewBtn.addEventListener('click', buildFullPreview);
     fetchTranscriptBtn.addEventListener('click', fetchTranscript);
+    submitBtn.addEventListener('click', submitRecording);
+    installBtn.addEventListener('click', promptInstall);
+
+    recordHoldBtn.addEventListener('pointerdown', startHoldRecording);
+    recordHoldBtn.addEventListener('pointerup', stopHoldRecording);
+    recordHoldBtn.addEventListener('pointercancel', stopHoldRecording);
+    recordHoldBtn.addEventListener('pointerleave', (event) => {
+      if (state.isRecording) stopHoldRecording(event);
+    });
 
     clearBtn.addEventListener('click', () => {
       if (state.isRecording) return;
@@ -1278,8 +1418,8 @@
       state.finalTranscript = transcriptBox.value;
     });
 
-    submitBtn.addEventListener('click', submitRecording);
-
+    loadSettings();
+    setRecordingStatus('Idle');
     renderSegments();
   </script>
 </body>
