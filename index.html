@@ -357,6 +357,9 @@
       display: flex;
       gap: 10px;
       align-items: center;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     .record-button {
@@ -369,6 +372,10 @@
       color: white;
       box-shadow: 0 4px 14px rgba(217, 48, 37, 0.28);
       touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .record-button.recording {
@@ -396,7 +403,7 @@
     }
   </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
   <div class="wrap">
     <section class="card hero">
       <div>
@@ -1013,6 +1020,8 @@
         event.stopPropagation();
       }
       if (!state.isReady) {
+        state.isSpaceHeld = false;
+        setRecordingStatus('Idle');
         alert('Enable the microphone first.');
         return;
       }
@@ -1026,7 +1035,11 @@
         event.stopPropagation();
       }
       state.isSpaceHeld = false;
-      stopRecording();
+      if (state.isRecording) {
+        stopRecording();
+      } else {
+        setRecordingStatus('Idle');
+      }
     }
 
     function isTypingTarget(target) {
@@ -1360,7 +1373,12 @@
         return;
       }
       if (isTypingTarget(event.target)) return;
-      if (!state.isReady) return;
+      if (!state.isReady) {
+        event.preventDefault();
+        state.isSpaceHeld = false;
+        setRecordingStatus('Idle');
+        return;
+      }
       event.preventDefault();
       if (state.isSpaceHeld) return;
       state.isSpaceHeld = true;
@@ -1371,10 +1389,13 @@
     window.addEventListener('keyup', (event) => {
       if (event.code !== 'Space') return;
       if (isTypingTarget(event.target)) return;
-      if (!state.isReady) return;
       event.preventDefault();
       state.isSpaceHeld = false;
-      stopRecording();
+      if (state.isRecording) {
+        stopRecording();
+      } else {
+        setRecordingStatus('Idle');
+      }
     });
 
     [apiKeyInput, languageDetectionInput, pollMsInput, speechModelsInput].forEach(element => {
@@ -1396,7 +1417,13 @@
     recordHoldBtn.addEventListener('pointerup', stopHoldRecording);
     recordHoldBtn.addEventListener('pointercancel', stopHoldRecording);
     recordHoldBtn.addEventListener('pointerleave', (event) => {
-      if (state.isRecording) stopHoldRecording(event);
+      if (state.isSpaceHeld || state.isRecording) stopHoldRecording(event);
+    });
+    recordHoldBtn.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+    });
+    recordHoldBtn.addEventListener('selectstart', (event) => {
+      event.preventDefault();
     });
 
     clearBtn.addEventListener('click', () => {
