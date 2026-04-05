@@ -180,10 +180,3 @@ Good contribution areas include:
 * export format support
 * accessibility improvements
 
-## License
-
-Choose the license that fits your project, for example MIT.
-
----
-
-If you use this project publicly, consider adding a short note about which browser you recommend and whether users should provide their own AssemblyAI API key.
