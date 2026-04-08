@@ -1,7 +1,7 @@
 const CACHE_NAME = "audio-feedback-recorder-v2";
 const APP_SHELL = [
   "./",
-  "'./index.html",
+  "./index.html",
   "./audio_feedback_recorder.html",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
